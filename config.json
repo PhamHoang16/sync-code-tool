@@ -1,0 +1,15 @@
+{
+    "src_url": "https://github.com/PhamHoang16/lighting-catalog.git",
+    "src_user": "PhamHoang16",
+    "src_token": "<token>",
+    "dest_url": "http://bitbucket.digital.vn/scm/~hoangp47/demo-script.git",
+    "dest_user": "hoangp47",
+    "dest_token": "<token>",
+    "sync_all": false,
+    "src_branches": [
+        "master"
+    ],
+    "dest_branches": [
+        "prod"
+    ]
+}
