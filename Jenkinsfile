@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'slave-1 || slave-2 || worker-ubuntu'
+    }
 
     parameters {
         string(name: 'SRC_URL', defaultValue: '', description: 'GitHub Repository URL (HTTPS)')
@@ -16,7 +18,6 @@ pipeline {
     stages {
         stage('Checkout Sync Tool') {
             steps {
-                // Clone the repository containing github_to_bitbucket_sync.py
                 checkout scm 
             }
         }
@@ -28,7 +29,13 @@ pipeline {
                         error("You must provide both GitHub and Bitbucket tokens to run this sync job!")
                     }
 
-                    // Auto-detect Python command (Windows often uses 'python' instead of 'python3')
+                    // Set environment variables directly to avoid Groovy string interpolation warning
+                    env.SYNC_SRC_USER = params.SRC_USER ?: ''
+                    env.SYNC_SRC_TOKEN = params.SRC_TOKEN
+                    env.SYNC_DEST_USER = params.DEST_USER ?: ''
+                    env.SYNC_DEST_TOKEN = params.DEST_TOKEN
+
+                    // Auto-detect Python command
                     def pythonCmd = isUnix() ? 'python3' : 'python'
 
                     // Construct the base command
@@ -37,11 +44,9 @@ pipeline {
                               "--dest-url \"${params.DEST_URL}\" " +
                               "--auth-method env"
                     
-                    // Append parameters based on user selection
                     if (params.SYNC_ALL) {
                         cmd += " --sync-all"
                     } else {
-                        // Prevent error if branches are empty and SYNC_ALL is not checked
                         if (!params.SRC_BRANCHES || !params.DEST_BRANCHES) {
                             error("Please provide source and destination branches (or check Sync All)!")
                         }
@@ -49,18 +54,10 @@ pipeline {
                                "--dest-branches ${params.DEST_BRANCHES}"
                     }
 
-                    // Inject tokens securely via withEnv
-                    withEnv([
-                        "SYNC_SRC_USER=${params.SRC_USER}",
-                        "SYNC_SRC_TOKEN=${params.SRC_TOKEN}",
-                        "SYNC_DEST_USER=${params.DEST_USER}",
-                        "SYNC_DEST_TOKEN=${params.DEST_TOKEN}"
-                    ]) {
-                        if (isUnix()) {
-                            sh "${cmd}"
-                        } else {
-                            bat "${cmd}"
-                        }
+                    if (isUnix()) {
+                        sh "${cmd}"
+                    } else {
+                        bat "${cmd}"
                     }
                 }
             }
@@ -69,11 +66,10 @@ pipeline {
 
     post {
         always {
-            cleanWs() // Clean up workspace after execution for security
+            cleanWs()
         }
         success {
             echo "✅ Source code synchronization successful!"
-            // Can add Slack/Teams notification here
         }
         failure {
             echo "❌ Synchronization failed. Please check the logs."
