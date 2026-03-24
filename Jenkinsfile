@@ -1,16 +1,16 @@
 pipeline {
-    agent any // Hoặc dùng docker agent chứa sẵn python3 và git
+    agent any // Or use a docker agent with python3 and git pre-installed
 
     parameters {
-        string(name: 'SRC_URL', defaultValue: '', description: 'URL của GitHub Repository (HTTPS)')
-        string(name: 'DEST_URL', defaultValue: '', description: 'URL của Bitbucket Repository (HTTPS)')
-        booleanParam(name: 'SYNC_ALL', defaultValue: false, description: 'Đồng bộ toàn bộ Branches (1:1)?')
-        string(name: 'SRC_BRANCHES', defaultValue: 'main', description: 'Các nhánh nguồn (Ví dụ: main dev). Bỏ qua nếu chọn SYNC_ALL.')
-        string(name: 'DEST_BRANCHES', defaultValue: 'master', description: 'Các nhánh đích (Ví dụ: master stag). Bỏ qua nếu chọn SYNC_ALL.')
+        string(name: 'SRC_URL', defaultValue: '', description: 'GitHub Repository URL (HTTPS)')
+        string(name: 'DEST_URL', defaultValue: '', description: 'Bitbucket Repository URL (HTTPS)')
+        booleanParam(name: 'SYNC_ALL', defaultValue: false, description: 'Sync all branches (1:1 mapping)?')
+        string(name: 'SRC_BRANCHES', defaultValue: 'main', description: 'Source branches (e.g., main dev). Ignored if SYNC_ALL is checked.')
+        string(name: 'DEST_BRANCHES', defaultValue: 'master', description: 'Destination branches (e.g., master stag). Ignored if SYNC_ALL is checked.')
     }
 
     environment {
-        // Thiết lập biến môi trường để thông báo cho script dùng method environment variables
+        // Enforce environment variable authentication mode
         AUTH_METHOD = 'env'
         SYNC_SRC_USER = 'your-github-bot-name' 
         SYNC_DEST_USER = 'your-bitbucket-bot-name'
@@ -19,14 +19,14 @@ pipeline {
     stages {
         stage('Checkout Sync Tool') {
             steps {
-                // Bước này clone thư mục chứa file github_to_bitbucket_sync.py về workspace
+                // Clone the repository containing github_to_bitbucket_sync.py
                 checkout scm 
             }
         }
 
         stage('Execute Sync') {
             steps {
-                // Bọc trong withCredentials để Jenkins tự chèn token vào biến môi trường một cách an toàn
+                // Wrap in withCredentials to securely inject tokens into environment variables
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'github-sync-token',
@@ -40,25 +40,25 @@ pipeline {
                     )
                 ]) {
                     script {
-                        // Khởi tạo lệnh chạy cơ bản
+                        // Construct the base command
                         def cmd = "python3 github_to_bitbucket_sync.py " +
                                   "--src-url '${params.SRC_URL}' " +
                                   "--dest-url '${params.DEST_URL}' " +
                                   "--auth-method env"
                         
-                        // Nối thêm parameter tùy theo mode người dùng chọn
+                        // Append parameters based on user selection
                         if (params.SYNC_ALL) {
                             cmd += " --sync-all"
                         } else {
-                            // Tránh lỗi nếu user để trống nhánh lúc chưa chọn SYNC_ALL
+                            // Prevent error if branches are empty and SYNC_ALL is not checked
                             if (!params.SRC_BRANCHES || !params.DEST_BRANCHES) {
-                                error("Vui lòng điền nhánh nguồn và nhánh đích (hoặc chọn thẻ Sync All)!")
+                                error("Please provide source and destination branches (or check Sync All)!")
                             }
                             cmd += " --src-branches ${params.SRC_BRANCHES} " +
                                    "--dest-branches ${params.DEST_BRANCHES}"
                         }
 
-                        // Thực thi lệnh bash
+                        // Execute the bash command
                         sh "${cmd}"
                     }
                 }
@@ -68,14 +68,14 @@ pipeline {
 
     post {
         always {
-            cleanWs() // Dọn dẹp workspace sau khi chạy xong để bảo mật
+            cleanWs() // Clean up workspace after execution for security
         }
         success {
-            echo "✅ Đồng bộ mã nguồn thành công!"
-            // Có thể thêm tính năng gửi tin nhắn Slack/Teams ở đây
+            echo "✅ Source code synchronization successful!"
+            // Can add Slack/Teams notification here
         }
         failure {
-            echo "❌ Đồng bộ thất bại. Vui lòng kiểm tra lại logs."
+            echo "❌ Synchronization failed. Please check the logs."
         }
     }
 }
