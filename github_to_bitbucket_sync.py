@@ -93,13 +93,18 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
                     branches.append(branch_name)
                     
             print(f"[*] Found {len(branches)} branch(es) to sync.")
+            failed_branches = []
             for branch in branches:
                 print(f"[*] Pushing '{branch}'...")
                 try:
                     run_cmd(["git", "push", "destination", f"refs/remotes/origin/{branch}:refs/heads/{branch}", "--force"], cwd=repo_dir, hide_output=True)
-                    print(f"[+] Successfully synced '{branch}' 🟢")
+                    print(f"[+] Successfully synced '{branch}' [OK]")
                 except subprocess.CalledProcessError:
-                    print(f"[-] Failed to sync '{branch}' 🔴")
+                    print(f"[-] Failed to sync '{branch}' [ER]")
+                    failed_branches.append(branch)
+            if failed_branches:
+                print(f"[-] Synchronization completed with errors. Failed branches: {', '.join(failed_branches)}")
+                sys.exit(1)
                     
         else:
             if not src_branches or not dest_branches:
@@ -111,6 +116,7 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
                 sys.exit(1)
                 
             print(f"[*] Mapping mode enabled: Syncing {len(src_branches)} mapped mapped branches.")
+            failed_mappings = []
             for src_b, dest_b in zip(src_branches, dest_branches):
                 print(f"[*] Analyzing mapping '{src_b}' -> '{dest_b}'...")
                 
@@ -118,16 +124,21 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
                     # Fetch only the specific branch needed for mapping
                     run_cmd(["git", "fetch", "origin", src_b], cwd=repo_dir, hide_output=True)
                 except subprocess.CalledProcessError:
-                    print(f"[-] Source branch '{src_b}' does not exist on GitHub. Skipping mapping. 🔴")
+                    print(f"[-] Source branch '{src_b}' does not exist on GitHub. Skipping mapping. [ER]")
+                    failed_mappings.append(f"{src_b}->{dest_b}")
                     continue
                     
                 print(f"[*] Pushing '{src_b}' to destination as '{dest_b}'...")
                 try:
                     # FETCH_HEAD evaluates to the branch we just explicitly fetched above
                     run_cmd(["git", "push", "destination", f"FETCH_HEAD:refs/heads/{dest_b}", "--force"], cwd=repo_dir, hide_output=True)
-                    print(f"[+] Successfully synced '{src_b}' -> '{dest_b}' 🟢")
+                    print(f"[+] Successfully synced '{src_b}' -> '{dest_b}' [OK]")
                 except subprocess.CalledProcessError:
-                    print(f"[-] Failed to sync '{src_b}' -> '{dest_b}' 🔴")
+                    print(f"[-] Failed to sync '{src_b}' -> '{dest_b}' [ER]")
+                    failed_mappings.append(f"{src_b}->{dest_b}")
+            if failed_mappings:
+                print(f"[-] Synchronization completed with errors. Failed mappings: {', '.join(failed_mappings)}")
+                sys.exit(1)
 
 def generate_sample_config():
     """Outputs a sample JSON configuration."""
