@@ -148,7 +148,7 @@ def main():
     # Config file
     parser.add_argument("-c", "--config", help="Path to config.json file. Options inside override or complement CLI args.")
     parser.add_argument("--generate-config", action="store_true", help="Print a sample config.json and exit.")
-    parser.add_argument("--auth-method", choices=["token", "ssh", "config"], help="Force an authentication method (token, ssh, config) to ensure safety.")
+    parser.add_argument("--auth-method", choices=["token", "ssh", "config", "env"], help="Force an authentication method (token, ssh, config, env) to ensure safety.")
     
     # Source
     src_group = parser.add_argument_group('GitHub (Source)')
