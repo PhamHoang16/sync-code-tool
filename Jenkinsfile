@@ -1,5 +1,8 @@
 pipeline {
-    agent any // Or use a docker agent with python3 and git pre-installed
+    agent {
+        // Ensure the job runs on a Linux agent with python3 and git installed
+        label 'linux'
+    }
 
     parameters {
         string(name: 'SRC_URL', defaultValue: '', description: 'GitHub Repository URL (HTTPS)')
@@ -11,15 +14,6 @@ pipeline {
         booleanParam(name: 'SYNC_ALL', defaultValue: false, description: 'Sync all branches (1:1 mapping)?')
         string(name: 'SRC_BRANCHES', defaultValue: 'main', description: 'Source branches (e.g., main dev). Ignored if SYNC_ALL is checked.')
         string(name: 'DEST_BRANCHES', defaultValue: 'master', description: 'Destination branches (e.g., master stag). Ignored if SYNC_ALL is checked.')
-    }
-
-    environment {
-        // Enforce environment variable authentication mode
-        AUTH_METHOD = 'env'
-        SYNC_SRC_USER = "${params.SRC_USER}"
-        SYNC_SRC_TOKEN = "${params.SRC_TOKEN}"
-        SYNC_DEST_USER = "${params.DEST_USER}"
-        SYNC_DEST_TOKEN = "${params.DEST_TOKEN}"
     }
 
     stages {
@@ -55,8 +49,16 @@ pipeline {
                                "--dest-branches ${params.DEST_BRANCHES}"
                     }
 
-                    // Execute the bash command
-                    sh "${cmd}"
+                    // Inject tokens securely via withEnv using single-quoted strings
+                    // This prevents Groovy string interpolation from leaking secrets
+                    withEnv([
+                        "SYNC_SRC_USER=${params.SRC_USER}",
+                        "SYNC_SRC_TOKEN=${params.SRC_TOKEN}",
+                        "SYNC_DEST_USER=${params.DEST_USER}",
+                        "SYNC_DEST_TOKEN=${params.DEST_TOKEN}"
+                    ]) {
+                        sh "${cmd}"
+                    }
                 }
             }
         }
