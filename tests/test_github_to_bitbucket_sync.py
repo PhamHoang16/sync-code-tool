@@ -4,8 +4,8 @@ import subprocess
 import sys
 import os
 
-# Add the directory to sys.path so we can import the script directly
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add the src directory to sys.path so we can import the script directly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 import github_to_bitbucket_sync as sync_tool
 
 class TestSyncTool(unittest.TestCase):

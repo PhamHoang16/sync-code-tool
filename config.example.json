@@ -1,0 +1,12 @@
+{
+    "src_url": "https://github.com/my-org/source-repo.git",
+    "src_user": "github_username",
+    "src_token": "ghp_your_github_token",
+    "dest_url": "https://bitbucket.internal.company.com/scm/proj/dest-repo.git",
+    "dest_user": "bitbucket_service_account",
+    "dest_token": "your_app_password_or_token",
+    "auth_method": "env",
+    "sync_all": false,
+    "src_branches": ["main", "dev", "feature-1"],
+    "dest_branches": ["prod", "stag", "feature-1"]
+}

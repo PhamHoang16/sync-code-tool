@@ -20,7 +20,7 @@ This method is highly recommended for automated pipelines (Jenkins, GitHub Actio
 export SYNC_SRC_TOKEN="ghp_xxxx"
 export SYNC_DEST_TOKEN="BBDC-xxxx"
 
-python3 github_to_bitbucket_sync.py \
+python3 src/github_to_bitbucket_sync.py \
   --auth-method env \
   --sync-all \
   --src-url "https://github.com/my-org/repo.git" \
@@ -35,7 +35,7 @@ Relies on SSH keys configured on the host machine for both GitHub and Bitbucket.
 **1. Explicit Branch Mapping**
 Sync specific branches from source to destination (e.g., `main` to `prod`):
 ```bash
-python3 github_to_bitbucket_sync.py \
+python3 src/github_to_bitbucket_sync.py \
   --auth-method ssh \
   --src-url "git@github.com:my-org/repo.git" \
   --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git" \
@@ -46,7 +46,7 @@ python3 github_to_bitbucket_sync.py \
 **2. Sync All Branches**
 Automatically fetches and pushes all branches (`--sync-all`):
 ```bash
-python3 github_to_bitbucket_sync.py \
+python3 src/github_to_bitbucket_sync.py \
   --auth-method ssh \
   --sync-all \
   --src-url "git@github.com:my-org/repo.git" \
@@ -54,9 +54,9 @@ python3 github_to_bitbucket_sync.py \
 ```
 
 ### Method 3: Configuration File
-Instead of passing long CLI arguments, you can define configurations in a `config.json` file.
+Instead of passing long CLI arguments, you can define configurations in a `config.example.json` file.
 
-**Sample `config.json` (SSH Authentication):**
+**Sample `config.example.json` (SSH Authentication):**
 ```json
 {
     "src_url": "git@github.com:my-org/repo.git",
@@ -68,5 +68,5 @@ Instead of passing long CLI arguments, you can define configurations in a `confi
 
 Execute the tool using the configuration file:
 ```bash
-python3 github_to_bitbucket_sync.py --config config.json
+python3 src/github_to_bitbucket_sync.py --config config.example.json
 ```

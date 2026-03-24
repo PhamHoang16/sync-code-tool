@@ -41,7 +41,7 @@ pipeline {
                 ]) {
                     script {
                         // Construct the base command
-                        def cmd = "python3 github_to_bitbucket_sync.py " +
+                        def cmd = "python3 src/github_to_bitbucket_sync.py " +
                                   "--src-url '${params.SRC_URL}' " +
                                   "--dest-url '${params.DEST_URL}' " +
                                   "--auth-method env"
