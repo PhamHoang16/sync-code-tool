@@ -1,6 +1,8 @@
 pipeline {
-    agent {
-        label 'slave-1 || slave-2 || worker-ubuntu'
+    agent { label "worker-linux" }
+
+    options {
+        disableConcurrentBuilds()
     }
 
     parameters {
@@ -18,7 +20,9 @@ pipeline {
     stages {
         stage('Checkout Sync Tool') {
             steps {
-                checkout scm 
+                retry(3) {
+                    checkout scm
+                }
             }
         }
 
@@ -43,7 +47,7 @@ pipeline {
                               "--src-url \"${params.SRC_URL}\" " +
                               "--dest-url \"${params.DEST_URL}\" " +
                               "--auth-method env"
-                    
+
                     if (params.SYNC_ALL) {
                         cmd += " --sync-all"
                     } else {
