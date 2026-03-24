@@ -28,8 +28,16 @@ pipeline {
             steps {
                 // Bọc trong withCredentials để Jenkins tự chèn token vào biến môi trường một cách an toàn
                 withCredentials([
-                    string(credentialsId: 'github-sync-token', variable: 'SYNC_SRC_TOKEN'),
-                    string(credentialsId: 'bitbucket-sync-pass', variable: 'SYNC_DEST_TOKEN')
+                    usernamePassword(
+                        credentialsId: 'github-sync-token',
+                        usernameVariable: 'SYNC_SRC_USER',
+                        passwordVariable: 'SYNC_SRC_TOKEN'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'bitbucket-sync-pass', 
+                        usernameVariable: 'SYNC_DEST_USER', 
+                        passwordVariable: 'SYNC_DEST_TOKEN'
+                    )
                 ]) {
                     script {
                         // Khởi tạo lệnh chạy cơ bản
