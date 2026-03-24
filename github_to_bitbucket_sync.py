@@ -5,6 +5,7 @@ import sys
 import tempfile
 import os
 import re
+import urllib.parse
 
 def scrub_url(text):
     """Hide credentials in URLs from logs."""
@@ -43,10 +44,13 @@ def construct_auth_url(url, user, token):
     if "@" in url and ("https://" in url or "http://" in url):
         return url
         
+    safe_user = urllib.parse.quote(user, safe="")
+    safe_token = urllib.parse.quote(token, safe="")
+        
     if url.startswith("https://"):
-        return url.replace("https://", f"https://{user}:{token}@")
+        return url.replace("https://", f"https://{safe_user}:{safe_token}@")
     elif url.startswith("http://"):
-        return url.replace("http://", f"http://{user}:{token}@")
+        return url.replace("http://", f"http://{safe_user}:{safe_token}@")
         
     return url
 
