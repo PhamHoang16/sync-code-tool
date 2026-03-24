@@ -143,16 +143,45 @@ class TestSyncTool(unittest.TestCase):
             
         mock_run_cmd.side_effect = side_effect
         
-        try:
-            with patch('sys.stdout', new=MagicMock()):
+        with patch('sys.stdout', new=MagicMock()):
+            with self.assertRaises(SystemExit) as cm:
                 sync_tool.sync_branches("src", "dest", ["missing", "main"], ["prod", "stag"], False)
-        except SystemExit:
-            self.fail("Ended unexpectedly when a branch was missing")
+            self.assertEqual(cm.exception.code, 1)
             
         # It should still push the second branch (main) to (stag)
         push_calls = [call for call in mock_run_cmd.call_args_list if call.args[0][:2] == ['git', 'push']]
         self.assertEqual(len(push_calls), 1)
         self.assertIn('refs/heads/stag', push_calls[0].args[0][3])
+
+    @patch('github_to_bitbucket_sync.run_cmd')
+    def test_sync_branches_sync_all_push_failure(self, mock_run_cmd):
+        def side_effect(cmd, **kwargs):
+            if cmd[:2] == ['git', 'branch']:
+                return "  origin/main\n"
+            if cmd[:2] == ['git', 'push']:
+                raise subprocess.CalledProcessError(1, cmd)
+            return ""
+            
+        mock_run_cmd.side_effect = side_effect
+        
+        with patch('sys.stdout', new=MagicMock()):
+            with self.assertRaises(SystemExit) as cm:
+                sync_tool.sync_branches("src", "dest", [], [], True)
+            self.assertEqual(cm.exception.code, 1)
+
+    @patch('github_to_bitbucket_sync.run_cmd')
+    def test_sync_branches_mapping_push_failure(self, mock_run_cmd):
+        def side_effect(cmd, **kwargs):
+            if cmd[:2] == ['git', 'push']:
+                raise subprocess.CalledProcessError(1, cmd)
+            return ""
+            
+        mock_run_cmd.side_effect = side_effect
+        
+        with patch('sys.stdout', new=MagicMock()):
+            with self.assertRaises(SystemExit) as cm:
+                sync_tool.sync_branches("src", "dest", ["main"], ["prod"], False)
+            self.assertEqual(cm.exception.code, 1)
 
 if __name__ == '__main__':
     unittest.main()
