@@ -44,10 +44,10 @@ class TestSyncTool(unittest.TestCase):
             "https://myuser:mytoken@github.com/repo.git"
         )
         
-        # Missing credentials
+        # Token only (no username) - should embed token directly
         self.assertEqual(
             sync_tool.construct_auth_url(url, None, "mytoken"),
-            url
+            "https://mytoken@github.com/repo.git"
         )
         
         # Already has auth, should not append again

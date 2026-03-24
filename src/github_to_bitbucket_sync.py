@@ -22,8 +22,7 @@ def run_cmd(cmd, cwd=None, hide_output=False):
             cwd=cwd, 
             stdout=subprocess.PIPE, 
             stderr=subprocess.PIPE, 
-            text=True, 
-            check=True
+            universal_newlines=True,
         )
         if not hide_output and result.stdout:
             print(scrub_url(result.stdout))
