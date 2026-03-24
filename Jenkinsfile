@@ -1,8 +1,5 @@
 pipeline {
-    agent {
-        // Ensure the job runs on a Linux agent with python3 and git installed
-        label 'linux'
-    }
+    agent any
 
     parameters {
         string(name: 'SRC_URL', defaultValue: '', description: 'GitHub Repository URL (HTTPS)')
@@ -31,10 +28,13 @@ pipeline {
                         error("You must provide both GitHub and Bitbucket tokens to run this sync job!")
                     }
 
+                    // Auto-detect Python command (Windows often uses 'python' instead of 'python3')
+                    def pythonCmd = isUnix() ? 'python3' : 'python'
+
                     // Construct the base command
-                    def cmd = "python3 src/github_to_bitbucket_sync.py " +
-                              "--src-url '${params.SRC_URL}' " +
-                              "--dest-url '${params.DEST_URL}' " +
+                    def cmd = "${pythonCmd} src/github_to_bitbucket_sync.py " +
+                              "--src-url \"${params.SRC_URL}\" " +
+                              "--dest-url \"${params.DEST_URL}\" " +
                               "--auth-method env"
                     
                     // Append parameters based on user selection
@@ -49,15 +49,18 @@ pipeline {
                                "--dest-branches ${params.DEST_BRANCHES}"
                     }
 
-                    // Inject tokens securely via withEnv using single-quoted strings
-                    // This prevents Groovy string interpolation from leaking secrets
+                    // Inject tokens securely via withEnv
                     withEnv([
                         "SYNC_SRC_USER=${params.SRC_USER}",
                         "SYNC_SRC_TOKEN=${params.SRC_TOKEN}",
                         "SYNC_DEST_USER=${params.DEST_USER}",
                         "SYNC_DEST_TOKEN=${params.DEST_TOKEN}"
                     ]) {
-                        sh "${cmd}"
+                        if (isUnix()) {
+                            sh "${cmd}"
+                        } else {
+                            bat "${cmd}"
+                        }
                     }
                 }
             }
