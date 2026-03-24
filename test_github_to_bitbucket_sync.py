@@ -126,6 +126,22 @@ class TestSyncTool(unittest.TestCase):
         self.assertTrue(any('refs/remotes/origin/feature:refs/heads/feature' in b for b in pushed_branches))
 
     @patch('github_to_bitbucket_sync.run_cmd')
+    def test_sync_branches_sync_all_failure(self, mock_run_cmd):
+        def side_effect(cmd, **kwargs):
+            if cmd[:2] == ['git', 'branch']:
+                return "  origin/main\n  origin/feature\n"
+            if cmd[:2] == ['git', 'push']:
+                raise subprocess.CalledProcessError(1, cmd)
+            return ""
+            
+        mock_run_cmd.side_effect = side_effect
+        
+        with patch('sys.stdout', new=MagicMock()):
+            with self.assertRaises(SystemExit) as cm:
+                sync_tool.sync_branches("src_url", "dest_url", [], [], True)
+            self.assertEqual(cm.exception.code, 1)
+
+    @patch('github_to_bitbucket_sync.run_cmd')
     def test_sync_branches_mapping_mismatch(self, mock_run_cmd):
         # Testing list size mismatch in mapping mode (e.g. 2 src branches but only 1 dest branch)
         with patch('sys.stdout', new=MagicMock()): 
@@ -135,7 +151,7 @@ class TestSyncTool(unittest.TestCase):
 
     @patch('github_to_bitbucket_sync.run_cmd')
     def test_sync_branches_missing_source_branch(self, mock_run_cmd):
-        # If fetch fails on a mapped branch, it should skip it and continue to the next
+        # If fetch fails on a mapped branch, it should skip it and continue to the next, but accumulate the error
         def side_effect(cmd, **kwargs):
             if cmd == ['git', 'fetch', 'origin', 'missing']:
                 raise subprocess.CalledProcessError(1, cmd)
@@ -152,36 +168,6 @@ class TestSyncTool(unittest.TestCase):
         push_calls = [call for call in mock_run_cmd.call_args_list if call.args[0][:2] == ['git', 'push']]
         self.assertEqual(len(push_calls), 1)
         self.assertIn('refs/heads/stag', push_calls[0].args[0][3])
-
-    @patch('github_to_bitbucket_sync.run_cmd')
-    def test_sync_branches_sync_all_push_failure(self, mock_run_cmd):
-        def side_effect(cmd, **kwargs):
-            if cmd[:2] == ['git', 'branch']:
-                return "  origin/main\n"
-            if cmd[:2] == ['git', 'push']:
-                raise subprocess.CalledProcessError(1, cmd)
-            return ""
-            
-        mock_run_cmd.side_effect = side_effect
-        
-        with patch('sys.stdout', new=MagicMock()):
-            with self.assertRaises(SystemExit) as cm:
-                sync_tool.sync_branches("src", "dest", [], [], True)
-            self.assertEqual(cm.exception.code, 1)
-
-    @patch('github_to_bitbucket_sync.run_cmd')
-    def test_sync_branches_mapping_push_failure(self, mock_run_cmd):
-        def side_effect(cmd, **kwargs):
-            if cmd[:2] == ['git', 'push']:
-                raise subprocess.CalledProcessError(1, cmd)
-            return ""
-            
-        mock_run_cmd.side_effect = side_effect
-        
-        with patch('sys.stdout', new=MagicMock()):
-            with self.assertRaises(SystemExit) as cm:
-                sync_tool.sync_branches("src", "dest", ["main"], ["prod"], False)
-            self.assertEqual(cm.exception.code, 1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -105,7 +105,6 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
             if failed_branches:
                 print(f"[-] Synchronization completed with errors. Failed branches: {', '.join(failed_branches)}")
                 sys.exit(1)
-                    
         else:
             if not src_branches or not dest_branches:
                 print("[-] In mapping mode, 'source_branches' and 'dest_branches' lists must be provided and non-empty.")
