@@ -4,6 +4,8 @@ pipeline {
     parameters {
         string(name: 'SRC_URL', defaultValue: '', description: 'GitHub Repository URL (HTTPS)')
         string(name: 'DEST_URL', defaultValue: '', description: 'Bitbucket Repository URL (HTTPS)')
+        credentials(name: 'GITHUB_CRED_ID', defaultValue: 'github-sync-token', description: 'Select GitHub Credential (Type: Username with password)', credentialType: 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl', required: true)
+        credentials(name: 'BITBUCKET_CRED_ID', defaultValue: 'bitbucket-sync-pass', description: 'Select Bitbucket Credential (Type: Username with password)', credentialType: 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl', required: true)
         booleanParam(name: 'SYNC_ALL', defaultValue: false, description: 'Sync all branches (1:1 mapping)?')
         string(name: 'SRC_BRANCHES', defaultValue: 'main', description: 'Source branches (e.g., main dev). Ignored if SYNC_ALL is checked.')
         string(name: 'DEST_BRANCHES', defaultValue: 'master', description: 'Destination branches (e.g., master stag). Ignored if SYNC_ALL is checked.')
@@ -29,12 +31,12 @@ pipeline {
                 // Wrap in withCredentials to securely inject tokens into environment variables
                 withCredentials([
                     usernamePassword(
-                        credentialsId: 'github-sync-token',
+                        credentialsId: params.GITHUB_CRED_ID,
                         usernameVariable: 'SYNC_SRC_USER',
                         passwordVariable: 'SYNC_SRC_TOKEN'
                     ),
                     usernamePassword(
-                        credentialsId: 'bitbucket-sync-pass', 
+                        credentialsId: params.BITBUCKET_CRED_ID, 
                         usernameVariable: 'SYNC_DEST_USER', 
                         passwordVariable: 'SYNC_DEST_TOKEN'
                     )
