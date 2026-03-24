@@ -1,46 +1,25 @@
 # GitHub to Bitbucket Sync Tool
 
-Script Python tự động đồng bộ (sync) các nhánh từ GitHub sang Bitbucket (mạng nội bộ).
+An automated Python script designed to seamlessly synchronize branches from a GitHub repository to an internal Bitbucket repository.
 
-## Yêu cầu
-- Máy/Server đã cài đặt sẵn `git` và `python3`.
+## Features
+- **Flexible Branch Mapping**: Support for 1-to-1 branch mapping or an automated "Sync All" mode.
+- **Secure Authentication**: Supports SSH, Config mapping, and Environment Variables. Explicit URL encoding prevents malformed URL errors when special characters exist in tokens or usernames.
+- **CI/CD Ready**: Built-in credential scrubbing in stdout ensures logs remain clean. Properly handles system exit codes (`sys.exit(1)`) on synchronization failures for accurate CI/CD reporting.
+- **Jenkins Integration**: Natively integrates with `Jenkinsfile` and `withCredentials` plugins.
 
-## Hướng dẫn sử dụng nhanh
+## Prerequisites
+- Server/Agent with `git` and `python3` installed.
 
-Có 2 cách sử dụng an toàn (không ghi trực tiếp token vào command hay file lưu trữ) được đề xuất:
+## Usage
 
-### Cách 1: Sử dụng kết nối SSH (Khuyên dùng cho Server)
-Bảo mật bằng chứng chỉ SSH Client có sẵn trên máy (cần cấu hình ssh-key trước cho cả Github và Bitbucket).
-
-**1. Đồng bộ 1-1 các nhánh cụ thể (Mapping)**
-Kéo nhánh `main`, `dev` từ GitHub đẩy lên `prod`, `stag` trên Bitbucket:
-```bash
-python3 github_to_bitbucket_sync.py \
-  --auth-method ssh \
-  --src-url "git@github.com:my-org/repo.git" \
-  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git" \
-  --src-branches "main" "dev" \
-  --dest-branches "prod" "stag"
-```
-
-**2. Tự động kéo & đẩy TẤT CẢ các nhánh (`--sync-all`)**
-```bash
-python3 github_to_bitbucket_sync.py \
-  --auth-method ssh \
-  --sync-all \
-  --src-url "git@github.com:my-org/repo.git" \
-  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git"
-```
-
----
-
-### Cách 2: Sử dụng Biến môi trường (Khuyên dùng cho CI/CD)
-Phù hợp khi chạy bằng Pipeline (Jenkins, Github Actions,...), sử dụng Personal Access Token (PAT) và App Password.
+### Method 1: Environment Variables (Recommended for CI/CD & Jenkins)
+This method is highly recommended for automated pipelines (Jenkins, GitHub Actions, GitLab CI). It utilizes Personal Access Tokens (PAT) and App Passwords injected via environment variables.
 
 ```bash
-# Truyền mã Token thông qua biến môi trường của hệ thống
-SYNC_SRC_TOKEN="ghp_xxxx" \
-SYNC_DEST_TOKEN="BBDC-xxxx" \
+export SYNC_SRC_TOKEN="ghp_xxxx"
+export SYNC_DEST_TOKEN="BBDC-xxxx"
+
 python3 github_to_bitbucket_sync.py \
   --auth-method env \
   --sync-all \
@@ -50,11 +29,34 @@ python3 github_to_bitbucket_sync.py \
   --dest-user "bitbucket_user"
 ```
 
-### Chạy bằng file cấu hình config.json (Tùy chọn)
-Nếu câu lệnh quá dài, bạn có thể thiết lập bằng file `config.json` cho cả 2 cách trên. Thuộc tính `auth_method` có thể được cấu hình ngay bên trong file JSON để tool tự nhận diện.
+### Method 2: SSH Connection (Recommended for Dedicated Servers)
+Relies on SSH keys configured on the host machine for both GitHub and Bitbucket.
 
-**Ví dụ cấu hình SSH trong config.json (Không lưu token):**
-Bạn chỉnh sửa file `config.json` với cấu trúc sau:
+**1. Explicit Branch Mapping**
+Sync specific branches from source to destination (e.g., `main` to `prod`):
+```bash
+python3 github_to_bitbucket_sync.py \
+  --auth-method ssh \
+  --src-url "git@github.com:my-org/repo.git" \
+  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git" \
+  --src-branches "main" "dev" \
+  --dest-branches "prod" "stag"
+```
+
+**2. Sync All Branches**
+Automatically fetches and pushes all branches (`--sync-all`):
+```bash
+python3 github_to_bitbucket_sync.py \
+  --auth-method ssh \
+  --sync-all \
+  --src-url "git@github.com:my-org/repo.git" \
+  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git"
+```
+
+### Method 3: Configuration File
+Instead of passing long CLI arguments, you can define configurations in a `config.json` file.
+
+**Sample `config.json` (SSH Authentication):**
 ```json
 {
     "src_url": "git@github.com:my-org/repo.git",
@@ -63,7 +65,8 @@ Bạn chỉnh sửa file `config.json` với cấu trúc sau:
     "sync_all": true
 }
 ```
-Và sau đó chỉ cần gọi 1 lệnh ngắn gọn duy nhất:
+
+Execute the tool using the configuration file:
 ```bash
 python3 github_to_bitbucket_sync.py --config config.json
 ```
