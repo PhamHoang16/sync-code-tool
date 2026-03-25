@@ -128,7 +128,7 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
                     # Fetch only the specific branch needed for mapping
                     run_cmd(["git", "fetch", "origin", src_b], cwd=repo_dir, hide_output=True)
                 except subprocess.CalledProcessError:
-                    print(f"[-] Source branch '{src_b}' does not exist on GitHub. Skipping mapping. [ER]")
+                    print(f"[-] Source branch '{src_b}' does not exist on source. Skipping mapping. [ER]")
                     failed_mappings.append(f"{src_b}->{dest_b}")
                     continue
                     
@@ -162,7 +162,7 @@ def generate_sample_config():
     print(json.dumps(sample, indent=4))
 
 def main():
-    parser = argparse.ArgumentParser(description="Automated synchronization tool from GitHub to Bitbucket.")
+    parser = argparse.ArgumentParser(description="Automated Git repository synchronization tool. Supports any Git-compatible SCM (GitHub, GitLab, Bitbucket, etc.).")
     
     # Config file
     parser.add_argument("-c", "--config", help="Path to config.json file. Options inside override or complement CLI args.")
@@ -170,22 +170,22 @@ def main():
     parser.add_argument("--auth-method", choices=["token", "ssh", "config", "env"], help="Force an authentication method (token, ssh, config, env) to ensure safety.")
     
     # Source
-    src_group = parser.add_argument_group('GitHub (Source)')
-    src_group.add_argument("--src-url", help="GitHub Repository URL")
-    src_group.add_argument("--src-user", help="GitHub username/token owner")
-    src_group.add_argument("--src-token", help="GitHub PAT (Personal Access Token) or SSH key path if adapting")
+    src_group = parser.add_argument_group('Source Repository')
+    src_group.add_argument("--src-url", help="Source repository URL (HTTPS or SSH)")
+    src_group.add_argument("--src-user", help="Source username or token owner")
+    src_group.add_argument("--src-token", help="Source access token (PAT, App Password, etc.)")
     
     # Destination
-    dest_group = parser.add_argument_group('Bitbucket (Destination - Internal)')
-    dest_group.add_argument("--dest-url", help="Bitbucket Repository URL")
-    dest_group.add_argument("--dest-user", help="Bitbucket username (service account)")
-    dest_group.add_argument("--dest-token", help="Bitbucket App Password or Token")
+    dest_group = parser.add_argument_group('Destination Repository')
+    dest_group.add_argument("--dest-url", help="Destination repository URL (HTTPS or SSH)")
+    dest_group.add_argument("--dest-user", help="Destination username (service account)")
+    dest_group.add_argument("--dest-token", help="Destination access token (App Password, HTTP Token, etc.)")
     
     # Branching
     branch_group = parser.add_argument_group('Branch Configurations')
     branch_group.add_argument("--sync-all", action="store_true", help="Automatically fetch and push all branches (name mapping 1:1).")
-    branch_group.add_argument("--src-branches", nargs="*", help="List of source branches on GitHub (e.g. main dev)")
-    branch_group.add_argument("--dest-branches", nargs="*", help="List of destination branches on Bitbucket (e.g. prod stag)")
+    branch_group.add_argument("--src-branches", nargs="*", help="List of source branches (e.g. main dev)")
+    branch_group.add_argument("--dest-branches", nargs="*", help="List of destination branches (e.g. prod stag)")
 
     args = parser.parse_args()
     
@@ -242,7 +242,7 @@ def main():
             sys.exit(1)
 
     print("========================================")
-    print(" GitHub to Bitbucket Repository Sync")
+    print("       Git Repository Sync Tool")
     print("========================================")
     print(f"Source      : {scrub_url(src_url)}")
     print(f"Destination : {scrub_url(dest_url)}")

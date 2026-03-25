@@ -1,26 +1,26 @@
-# GitHub to Bitbucket Sync Tool
+# Git Repository Sync Tool
 
-An automated Python script designed to seamlessly synchronize branches from a GitHub repository to an internal Bitbucket repository.
+An automated Python script to synchronize branches between any Git-compatible SCM platforms (GitHub, GitLab, Bitbucket, etc.).
 
 ## Features
+- **SCM-Agnostic**: Works with any Git remote — GitHub ↔ Bitbucket, GitLab ↔ GitHub, GitLab ↔ Bitbucket, etc.
 - **Flexible Branch Mapping**: Support for 1-to-1 branch mapping or an automated "Sync All" mode.
-- **Secure Authentication**: Supports SSH, Config mapping, and Environment Variables. Explicit URL encoding prevents malformed URL errors when special characters exist in tokens or usernames.
-- **CI/CD Ready**: Built-in credential scrubbing in stdout ensures logs remain clean. Properly handles system exit codes (`sys.exit(1)`) on synchronization failures for accurate CI/CD reporting.
+- **Secure Authentication**: Supports SSH, Config file, and Environment Variables. URL encoding prevents malformed URL errors with special characters in tokens.
+- **CI/CD Ready**: Credential scrubbing in logs, proper exit codes (`sys.exit(1)`) on failures for accurate pipeline reporting.
 - **Jenkins Integration**: Natively integrates with `Jenkinsfile` and `withCredentials` plugins.
 
 ## Prerequisites
-- Server/Agent with `git` and `python3` installed.
+- Server/Agent with `git` and `python3` (3.6+) installed.
 
 ## Usage
 
 ### Method 1: Environment Variables (Recommended for CI/CD & Jenkins)
-This method is highly recommended for automated pipelines (Jenkins, GitHub Actions, GitLab CI). It utilizes Personal Access Tokens (PAT) and App Passwords injected via environment variables.
 
 ```bash
 export SYNC_SRC_TOKEN="ghp_xxxx"
 export SYNC_DEST_TOKEN="BBDC-xxxx"
 
-python3 src/github_to_bitbucket_sync.py \
+python3 src/git_repo_sync.py \
   --auth-method env \
   --sync-all \
   --src-url "https://github.com/my-org/repo.git" \
@@ -29,13 +29,18 @@ python3 src/github_to_bitbucket_sync.py \
   --dest-user "bitbucket_user"
 ```
 
-### Method 2: SSH Connection (Recommended for Dedicated Servers)
-Relies on SSH keys configured on the host machine for both GitHub and Bitbucket.
+### Method 2: SSH Connection
 
-**1. Explicit Branch Mapping**
-Sync specific branches from source to destination (e.g., `main` to `prod`):
 ```bash
-python3 src/github_to_bitbucket_sync.py \
+# Sync all branches
+python3 src/git_repo_sync.py \
+  --auth-method ssh \
+  --sync-all \
+  --src-url "git@github.com:my-org/repo.git" \
+  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git"
+
+# Explicit branch mapping (main → prod, dev → stag)
+python3 src/git_repo_sync.py \
   --auth-method ssh \
   --src-url "git@github.com:my-org/repo.git" \
   --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git" \
@@ -43,30 +48,27 @@ python3 src/github_to_bitbucket_sync.py \
   --dest-branches "prod" "stag"
 ```
 
-**2. Sync All Branches**
-Automatically fetches and pushes all branches (`--sync-all`):
-```bash
-python3 src/github_to_bitbucket_sync.py \
-  --auth-method ssh \
-  --sync-all \
-  --src-url "git@github.com:my-org/repo.git" \
-  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git"
-```
-
 ### Method 3: Configuration File
-Instead of passing long CLI arguments, you can define configurations in a `config.example.json` file.
 
-**Sample `config.example.json` (SSH Authentication):**
-```json
-{
-    "src_url": "git@github.com:my-org/repo.git",
-    "dest_url": "ssh://git@bitbucket.company.com:7999/proj/repo.git",
-    "auth_method": "ssh",
-    "sync_all": true
-}
-```
-
-Execute the tool using the configuration file:
 ```bash
-python3 src/github_to_bitbucket_sync.py --config config.example.json
+python3 src/git_repo_sync.py --config config.example.json
 ```
+
+## SCM Compatibility Matrix
+
+| Source | Destination | Auth Method |
+|--------|------------|-------------|
+| GitHub | Bitbucket | PAT + App Password / HTTP Token |
+| GitHub | GitLab | PAT + Personal Access Token |
+| GitLab | Bitbucket | Personal Access Token + App Password |
+| GitLab | GitHub | Personal Access Token + PAT |
+| Bitbucket | GitHub | HTTP Token + PAT |
+
+## Jenkins Integration
+
+The included `Jenkinsfile` provides a parameterized pipeline. Users select pre-configured credentials from a dropdown — no token handling required.
+
+### Setup
+1. Create `usernamePassword` credentials in Jenkins for source and destination SCMs
+2. Configure the pipeline job to use the `Jenkinsfile` from this repository
+3. Build with Parameters: select URLs, credentials, and branch options

@@ -6,7 +6,7 @@ import os
 
 # Add the src directory to sys.path so we can import the script directly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-import github_to_bitbucket_sync as sync_tool
+import git_repo_sync as sync_tool
 
 class TestSyncTool(unittest.TestCase):
 
@@ -82,7 +82,7 @@ class TestSyncTool(unittest.TestCase):
             with patch('sys.stdout', new=MagicMock()): # suppress print
                 sync_tool.run_cmd(["false"])
 
-    @patch('github_to_bitbucket_sync.run_cmd')
+    @patch('git_repo_sync.run_cmd')
     def test_sync_branches_mapping_success(self, mock_run_cmd):
         # We don't want the actual git commands to run
         mock_run_cmd.return_value = "mocked output"
@@ -100,7 +100,7 @@ class TestSyncTool(unittest.TestCase):
         self.assertIn(['git', 'fetch'], commands)
         self.assertIn(['git', 'push'], commands)
 
-    @patch('github_to_bitbucket_sync.run_cmd')
+    @patch('git_repo_sync.run_cmd')
     def test_sync_branches_sync_all_success(self, mock_run_cmd):
         # Mock the git branch -r output to return two branches
         def side_effect(cmd, **kwargs):
@@ -125,7 +125,7 @@ class TestSyncTool(unittest.TestCase):
         self.assertTrue(any('refs/remotes/origin/main:refs/heads/main' in b for b in pushed_branches))
         self.assertTrue(any('refs/remotes/origin/feature:refs/heads/feature' in b for b in pushed_branches))
 
-    @patch('github_to_bitbucket_sync.run_cmd')
+    @patch('git_repo_sync.run_cmd')
     def test_sync_branches_sync_all_failure(self, mock_run_cmd):
         def side_effect(cmd, **kwargs):
             if cmd[:2] == ['git', 'branch']:
@@ -141,7 +141,7 @@ class TestSyncTool(unittest.TestCase):
                 sync_tool.sync_branches("src_url", "dest_url", [], [], True)
             self.assertEqual(cm.exception.code, 1)
 
-    @patch('github_to_bitbucket_sync.run_cmd')
+    @patch('git_repo_sync.run_cmd')
     def test_sync_branches_mapping_mismatch(self, mock_run_cmd):
         # Testing list size mismatch in mapping mode (e.g. 2 src branches but only 1 dest branch)
         with patch('sys.stdout', new=MagicMock()): 
@@ -149,7 +149,7 @@ class TestSyncTool(unittest.TestCase):
                 sync_tool.sync_branches("src", "dest", ["main", "dev"], ["prod"], False)
             self.assertEqual(cm.exception.code, 1)
 
-    @patch('github_to_bitbucket_sync.run_cmd')
+    @patch('git_repo_sync.run_cmd')
     def test_sync_branches_missing_source_branch(self, mock_run_cmd):
         # If fetch fails on a mapped branch, it should skip it and continue to the next, but accumulate the error
         def side_effect(cmd, **kwargs):
