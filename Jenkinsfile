@@ -39,6 +39,11 @@ pipeline {
                     )
                 ]) {
                     script {
+                        // Input validation
+                        if (!params.SRC_URL?.trim() || !params.DEST_URL?.trim()) {
+                            error("Both Source URL and Destination URL are required!")
+                        }
+
                         // Auto-detect Python command
                         def pythonCmd = isUnix() ? 'python3' : 'python'
 
