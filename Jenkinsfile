@@ -15,10 +15,10 @@ pipeline {
         credentials(name: 'DEST_CRED_ID', defaultValue: '', description: 'Select Destination credential (Type: Username with password)', credentialType: 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl', required: true)
         
         booleanParam(name: 'SYNC_ALL', defaultValue: true, description: 'Sync all branches (1:1 mapping)?')
-        string(name: 'IGNORE_BRANCHES', defaultValue: 'release main master uat production prod', description: 'Space-separated list of branches to ignore in Sync All mode (e.g., master production)')
+        string(name: 'IGNORE_BRANCHES', defaultValue: 'release, main, master, uat, production, prod', description: 'Comma-separated list of branches to ignore in Sync All mode (e.g., master, production, staging)')
         
-        string(name: 'SRC_BRANCHES', defaultValue: '', description: 'Source branches to sync. Space-separated (e.g., main dev feature/xyz). Ignored if Sync All is checked.')
-        string(name: 'DEST_BRANCHES', defaultValue: '', description: 'Destination branches mapping. Space-separated (e.g., master stag feature/xyz). Ignored if Sync All is checked.')
+        string(name: 'SRC_BRANCHES', defaultValue: '', description: 'Source branches to sync. Comma-separated (e.g., main, dev, feature/abc). Ignored if Sync All is checked.')
+        string(name: 'DEST_BRANCHES', defaultValue: '', description: 'Destination branches mapping. Comma-separated (e.g., master, stag, feature/abc). Ignored if Sync All is checked.')
     }
 
     stages {
@@ -61,13 +61,14 @@ pipeline {
                             if (params.SYNC_ALL) {
                                 cmd += " --sync-all"
                                 if (params.IGNORE_BRANCHES?.trim()) {
-                                    cmd += " --ignore-branches ${params.IGNORE_BRANCHES}"
+                                    // Pass as is, Python script will handle the commas
+                                    cmd += " --ignore-branches \"${params.IGNORE_BRANCHES}\""
                                 }
                             } else {
                                 if (!params.SRC_BRANCHES?.trim() || !params.DEST_BRANCHES?.trim()) {
                                     error("Please provide source and destination branches (or check Sync All)!")
                                 }
-                                cmd += " --src-branches ${params.SRC_BRANCHES} --dest-branches ${params.DEST_BRANCHES}"
+                                cmd += " --src-branches \"${params.SRC_BRANCHES}\" --dest-branches \"${params.DEST_BRANCHES}\""
                             }
 
                             if (isUnix()) {

@@ -149,6 +149,21 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all, igno
                 print(f"[-] Synchronization completed with errors. Failed mappings: {', '.join(failed_mappings)}")
                 sys.exit(1)
 
+def parse_list(input_list):
+    """Parse a list of strings that might contain comma-separated values."""
+    if not input_list:
+        return []
+    result = []
+    for item in input_list:
+        # Split by comma and strip whitespace
+        parts = [p.strip() for p in item.split(',')]
+        for p in parts:
+            if p:
+                # Further split by space just in case
+                subparts = [sp.strip() for sp in p.split()]
+                result.extend([sp for sp in subparts if sp])
+    return result
+
 def generate_sample_config():
     """Outputs a sample JSON configuration."""
     sample = {
@@ -222,9 +237,9 @@ def main():
     
     sync_all = args.sync_all if getattr(args, 'sync_all', False) else config.get("sync_all", False)
     
-    src_branches = args.src_branches or config.get("src_branches", [])
-    dest_branches = args.dest_branches or config.get("dest_branches", [])
-    ignore_branches = args.ignore_branches or config.get("ignore_branches", [])
+    src_branches = parse_list(args.src_branches or config.get("src_branches", []))
+    dest_branches = parse_list(args.dest_branches or config.get("dest_branches", []))
+    ignore_branches = parse_list(args.ignore_branches or config.get("ignore_branches", []))
 
     if not src_url or not dest_url:
         print("[-] Error: Both source (--src-url) and destination (--dest-url) URLs must be defined.")

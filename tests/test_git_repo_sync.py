@@ -36,6 +36,16 @@ class TestSyncTool(unittest.TestCase):
             "Cloning from https://***:***@github.com !"
         )
 
+    def test_parse_list(self):
+        # Mixed commas and spaces
+        input_list = ["main, master", "dev", "prod,staging test"]
+        expected = ["main", "master", "dev", "prod", "staging", "test"]
+        self.assertEqual(sync_tool.parse_list(input_list), expected)
+        
+        # Empty and whitespace
+        self.assertEqual(sync_tool.parse_list(["  ", ""]), [])
+        self.assertEqual(sync_tool.parse_list(None), [])
+
     def test_construct_auth_url(self):
         # Base case
         url = "https://github.com/repo.git"
