@@ -24,24 +24,24 @@ export SYNC_DEST_TOKEN="BBDC-xxxx"
 python3 src/git_repo_sync.py \
   --auth-method env \
   --sync-all \
-  --ignore-branches "master" "production" "release" \
+  --ignore-branches "master, production, release" \
   --src-url "https://github.com/my-org/repo.git" \
   --dest-url "http://bitbucket.company.com/scm/proj/repo.git" \
-  --src-user "github_user" \
-  --dest-user "bitbucket_user"
+  --src_user "github_user" \
+  --dest_user "bitbucket_user"
 ```
 
 ### Method 2: SSH Connection
 
 ```bash
 # Explicit branch mapping (main → prod, dev → stag)
-# Use space-separated lists for multiple branches
+# Use comma-separated list or multiple arguments
 python3 src/git_repo_sync.py \
   --auth-method ssh \
   --src-url "git@github.com:my-org/repo.git" \
   --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git" \
-  --src-branches "main" "dev" "feature/abc" \
-  --dest-branches "prod" "stag" "feature/abc"
+  --src-branches "main, dev, feature/abc" \
+  --dest-branches "prod, stag, feature/abc"
 ```
 
 ### Method 3: Configuration File
