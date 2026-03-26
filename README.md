@@ -20,9 +20,11 @@ An automated Python script to synchronize branches between any Git-compatible SC
 export SYNC_SRC_TOKEN="ghp_xxxx"
 export SYNC_DEST_TOKEN="BBDC-xxxx"
 
+# Sync all but ignore some protected branches
 python3 src/git_repo_sync.py \
   --auth-method env \
   --sync-all \
+  --ignore-branches "master" "production" "release" \
   --src-url "https://github.com/my-org/repo.git" \
   --dest-url "http://bitbucket.company.com/scm/proj/repo.git" \
   --src-user "github_user" \
@@ -32,20 +34,14 @@ python3 src/git_repo_sync.py \
 ### Method 2: SSH Connection
 
 ```bash
-# Sync all branches
-python3 src/git_repo_sync.py \
-  --auth-method ssh \
-  --sync-all \
-  --src-url "git@github.com:my-org/repo.git" \
-  --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git"
-
 # Explicit branch mapping (main → prod, dev → stag)
+# Use space-separated lists for multiple branches
 python3 src/git_repo_sync.py \
   --auth-method ssh \
   --src-url "git@github.com:my-org/repo.git" \
   --dest-url "ssh://git@bitbucket.company.com:7999/proj/repo.git" \
-  --src-branches "main" "dev" \
-  --dest-branches "prod" "stag"
+  --src-branches "main" "dev" "feature/abc" \
+  --dest-branches "prod" "stag" "feature/abc"
 ```
 
 ### Method 3: Configuration File

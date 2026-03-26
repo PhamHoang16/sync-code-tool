@@ -23,6 +23,7 @@ def run_cmd(cmd, cwd=None, hide_output=False):
             stdout=subprocess.PIPE, 
             stderr=subprocess.PIPE, 
             universal_newlines=True,
+            check=True
         )
         if not hide_output and result.stdout:
             print(scrub_url(result.stdout))
@@ -59,7 +60,7 @@ def construct_auth_url(url, user, token):
         
     return url
 
-def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
+def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all, ignore_branches=None):
     with tempfile.TemporaryDirectory() as tmpdir:
         print("[*] Created temporary workspace...")
         print("[*] Cloning source repository...")
@@ -96,6 +97,10 @@ def sync_branches(src_url, dest_url, src_branches, dest_branches, sync_all):
                 if line and "->" not in line and line.startswith("origin/"):
                     branch_name = line.replace("origin/", "", 1)
                     branches.append(branch_name)
+                    
+            if ignore_branches:
+                print(f"[*] Filtering out ignored branches: {', '.join(ignore_branches)}")
+                branches = [b for b in branches if b not in ignore_branches]
                     
             print(f"[*] Found {len(branches)} branch(es) to sync.")
             failed_branches = []
@@ -186,6 +191,7 @@ def main():
     branch_group.add_argument("--sync-all", action="store_true", help="Automatically fetch and push all branches (name mapping 1:1).")
     branch_group.add_argument("--src-branches", nargs="*", help="List of source branches (e.g. main dev)")
     branch_group.add_argument("--dest-branches", nargs="*", help="List of destination branches (e.g. prod stag)")
+    branch_group.add_argument("--ignore-branches", nargs="*", help="List of branches to ignore during sync-all (e.g. master production)")
 
     args = parser.parse_args()
     
@@ -214,11 +220,11 @@ def main():
     dest_user = args.dest_user or config.get("dest_user") or os.environ.get("SYNC_DEST_USER")
     dest_token = args.dest_token or config.get("dest_token") or os.environ.get("SYNC_DEST_TOKEN")
     
-    # `sync_all` flag overrides if provided, else falls back to config
     sync_all = args.sync_all if getattr(args, 'sync_all', False) else config.get("sync_all", False)
     
     src_branches = args.src_branches or config.get("src_branches", [])
     dest_branches = args.dest_branches or config.get("dest_branches", [])
+    ignore_branches = args.ignore_branches or config.get("ignore_branches", [])
 
     if not src_url or not dest_url:
         print("[-] Error: Both source (--src-url) and destination (--dest-url) URLs must be defined.")
@@ -250,13 +256,16 @@ def main():
     if not sync_all:
         print(f"Src branches: {src_branches}")
         print(f"Dst branches: {dest_branches}")
+    else:
+        if ignore_branches:
+            print(f"Ignore list : {ignore_branches}")
     print("----------------------------------------")
 
     auth_src_url = construct_auth_url(src_url, src_user, src_token)
     auth_dest_url = construct_auth_url(dest_url, dest_user, dest_token)
 
     try:
-        sync_branches(auth_src_url, auth_dest_url, src_branches, dest_branches, sync_all)
+        sync_branches(auth_src_url, auth_dest_url, src_branches, dest_branches, sync_all, ignore_branches)
     except KeyboardInterrupt:
         print("\n[-] Sync canceled by user.")
         sys.exit(1)

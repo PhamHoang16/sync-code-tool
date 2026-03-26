@@ -169,5 +169,23 @@ class TestSyncTool(unittest.TestCase):
         self.assertEqual(len(push_calls), 1)
         self.assertIn('refs/heads/stag', push_calls[0].args[0][3])
 
+    @patch('git_repo_sync.run_cmd')
+    def test_sync_branches_sync_all_with_ignore(self, mock_run_cmd):
+        def side_effect(cmd, **kwargs):
+            if cmd[:2] == ['git', 'branch']:
+                return "  origin/main\n  origin/feature\n  origin/develop\n"
+            return ""
+            
+        mock_run_cmd.side_effect = side_effect
+        
+        with patch('sys.stdout', new=MagicMock()):
+            # Sync all but ignore 'main' and 'develop'
+            sync_tool.sync_branches("src", "dest", [], [], True, ignore_branches=["main", "develop"])
+            
+        # Should only push 'feature'
+        push_calls = [call for call in mock_run_cmd.call_args_list if call.args[0][:2] == ['git', 'push']]
+        self.assertEqual(len(push_calls), 1)
+        self.assertIn('refs/remotes/origin/feature:refs/heads/feature', push_calls[0].args[0][3])
+
 if __name__ == '__main__':
     unittest.main()
