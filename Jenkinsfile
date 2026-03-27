@@ -34,43 +34,43 @@ pipeline {
         stage('Execute Sync') {
             steps {
                 script {
-                    // Securely assign manual credentials to env
-                    env.SYNC_SRC_USER = params.SRC_USER ?: ''
-                    env.SYNC_SRC_TOKEN = params.SRC_TOKEN
-                    
-                    env.SYNC_DEST_USER = params.DEST_USER ?: ''
-                    env.SYNC_DEST_TOKEN = params.DEST_TOKEN
-
-                    // Input validation
-                    if (!params.SRC_URL?.trim() || !params.DEST_URL?.trim()) {
-                        error("Both Source URL and Destination URL are required!")
-                    }
-
-                    // Auto-detect Python command
-                    def pythonCmd = isUnix() ? 'python3' : 'python'
-
-                    // Construct the base command
-                    def cmd = "${pythonCmd} src/git_repo_sync.py " +
-                              "--src-url \"${params.SRC_URL}\" " +
-                              "--dest-url \"${params.DEST_URL}\" " +
-                              "--auth-method env"
-
-                    if (params.SYNC_ALL) {
-                        cmd += " --sync-all"
-                        if (params.IGNORE_BRANCHES?.trim()) {
-                            cmd += " --ignore-branches \"${params.IGNORE_BRANCHES}\""
+                    withEnv([
+                        'SYNC_SRC_USER=' + (params.SRC_USER ?: ''),
+                        'SYNC_SRC_TOKEN=' + params.SRC_TOKEN,
+                        'SYNC_DEST_USER=' + (params.DEST_USER ?: ''),
+                        'SYNC_DEST_TOKEN=' + params.DEST_TOKEN
+                    ]) {
+                        // Input validation
+                        if (!params.SRC_URL?.trim() || !params.DEST_URL?.trim()) {
+                            error("Both Source URL and Destination URL are required!")
                         }
-                    } else {
-                        if (!params.SRC_BRANCHES?.trim() || !params.DEST_BRANCHES?.trim()) {
-                            error("Please provide source and destination branches (or check Sync All)!")
-                        }
-                        cmd += " --src-branches \"${params.SRC_BRANCHES}\" --dest-branches \"${params.DEST_BRANCHES}\""
-                    }
 
-                    if (isUnix()) {
-                        sh "${cmd}"
-                    } else {
-                        bat "${cmd}"
+                        // Auto-detect Python command
+                        def pythonCmd = isUnix() ? 'python3' : 'python'
+
+                        // Construct the base command
+                        def cmd = "${pythonCmd} src/git_repo_sync.py " +
+                                  "--src-url \"${params.SRC_URL}\" " +
+                                  "--dest-url \"${params.DEST_URL}\" " +
+                                  "--auth-method env"
+
+                        if (params.SYNC_ALL) {
+                            cmd += " --sync-all"
+                            if (params.IGNORE_BRANCHES?.trim()) {
+                                cmd += " --ignore-branches \"${params.IGNORE_BRANCHES}\""
+                            }
+                        } else {
+                            if (!params.SRC_BRANCHES?.trim() || !params.DEST_BRANCHES?.trim()) {
+                                error("Please provide source and destination branches (or check Sync All)!")
+                            }
+                            cmd += " --src-branches \"${params.SRC_BRANCHES}\" --dest-branches \"${params.DEST_BRANCHES}\""
+                        }
+
+                        if (isUnix()) {
+                            sh "${cmd}"
+                        } else {
+                            bat "${cmd}"
+                        }
                     }
                 }
             }
